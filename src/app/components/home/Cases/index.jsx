@@ -1,27 +1,32 @@
 'use client'
 import SearchBar from '@/app/components/home/SearchBar'
 import Card from '@/app/components/home/CaseCard'
-import { useState, useEffect } from 'react';
-import caseData from "@/app/config/case.json"
+import { Client, Databases,Query} from 'appwrite';
+export const client = new Client();
+import { useEffect,useState } from 'react';
 
 const Page = () => {
-  const [eventsList, setEventsList] = useState([]);
+  const [caseData, setCases] = useState([]);
+  const [displayData, setDisplay] = useState(false);
+  const client = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject('legalsarthi');
+  const databases = new Databases(client);
 
   useEffect(() => {
-    fetch("http://backend.msitalumni.com/AllEvent")
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw new Error('Network response was not ok.');
-      })
-      .then(data => {
-        setEventsList(data.events);
-      })
-      .catch(error => {
-        console.error('There was a problem with the fetch operation:', error);
-      });
+    const fetchCases = async () => {
+      try {
+        const response = await databases.listDocuments('legalsarthi', 'cases');
+        setCases(response.documents);
+        setDisplay(true);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching cases:', error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchCases();
   }, []);
+
 
 
   let categories = [
@@ -82,6 +87,27 @@ const Page = () => {
   else { updatedCaseData = caseData.filter(data => data.category == categories[currentCategory].name); }
 
 
+  const display=()=>{
+    return <div className='w-[90%] md:w-[73%] p-0 md:p-4 mx-auto'>
+    {
+      updatedCaseData.map((data) => (
+        <Card
+          key={data._id}
+          _id={data._id}
+          litigantName={data.litigantName}
+          dateOfCase={data.dateOfCase}
+          caseId={data.caseId}
+          caseType={data.caseType}
+          caseStatus={data.caseStatus}
+          opposingLitigant={data.opposingLitigant}
+        />
+      ))
+    }
+  </div>
+
+  }
+
+
   return (
     <div>
       <p className='py-4 text-4xl text-center font-bold text-[#04434E]'>Delhi High Court Cases</p>
@@ -109,23 +135,7 @@ const Page = () => {
               </div>
             </div>
           </div>
-          <div className='w-[90%] md:w-[73%] p-0 md:p-4 mx-auto'>
-            {
-              updatedCaseData.map((data) => (
-                <Card
-                  key={data._id}
-                  _id={data._id}
-                  litigantName={data.litigantName}
-                  dateOfCase={data.dateOfCase}
-                  caseId={data.caseId}
-                  caseType={data.caseType}
-                  caseStatus={data.caseStatus}
-                  opposingLitigant={data.opposingLitigant}
-                />
-              ))
-            }
-          </div>
-
+                {displayData ? display() : "Loading"}
         </div>
       </div>
     </div>
